@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpideyMusicLibrary</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/fonts/remixicon.css" rel="stylesheet" />
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: url(images/samat1.jpg) center/cover no-repeat;
+      color: #fff;
+    }
+
+    .player {
+      width: 320px;
+      padding: 45px;
+      border-radius: 16px;
+      background: rgba(0, 22, 36, 0.3);
+      backdrop-filter: blur(4px);
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      text-align: center;
+    }
+
+    .artist-label {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    .artist-name {
+      font-size: 22px;
+      margin: 4px 0 12px;
+    }
+
+    .cover {
+      width: 180px;
+      height: 180px;
+      margin: auto;
+      overflow: hidden;
+    }
+
+    .cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .song-title {
+      margin: 14px 0;
+      font-size: 18px;
+    }
+
+    .progress {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      border-radius: 2px;
+      margin-top: 20px;
+      position: relative;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #fff;
+      border-radius: 2px;
+    }
+
+    .time {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+    }
+
+    button {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      background: rgba(0, 0, 0, 0.55);
+      color: #fff;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .credit {
+        position: fixed;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 12px;
+        color: #fff;
+        opacity: 0.9;
+        margin-bottom: 40px;
+        pointer-events: none;
+        background: rgba(0, 0, 0, 0.25);
+        padding: 6px 10px;
+        border-radius: 8px;
+        backdrop-filter: blur(4px);
+      }
+  </style>
+</head>
+
+<body>
+  <div class="player">
+    <div class="artist-label">ARTIST</div>
+    <div class="artist-name" id="artist"></div>
+
+    <div class="cover">
+      <img id="cover" />
+    </div>
+
+    <div class="song-title" id="title"></div>
+
+    <div class="progress" id="progress">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div class="time">
+      <span id="current">0:00</span>
+      <span id="duration">-0:00</span>
+    </div>
+
+    <div class="controls">
+      <button id="prev"><i class="ri-skip-back-fill"></i></button>
+      <button id="play"><i class="ri-play-large-fill"></i></button>
+      <button id="next"><i class="ri-skip-forward-fill"></i></button>
+    </div>
+
+    <audio id="audio"></audio>
+  </div>
+  <div class="credit" aria-hidden="true">SpideyDev</div>
+<script>
+  const songs = [
+    {
+      title: "Naa Pata Mujhe",
+      artist: "Pathak",
+      src: "songs/naapatamujhe.mp3",
+      cover: "images/naapata.jpeg",
+    },
+    {
+      title: "Chaand",
+      artist: "AUR",
+      src: "songs/chaand.mp3",
+      cover: "images/chaand.jpeg",
+    },
+    {
+      title: "Jogan",
+      artist: "Bhoomi",
+      src: "songs/jogan.mp3",
+      cover: "images/jogan.jpeg",
+    },
+    {
+      title: "Ranjha",
+      artist: "Noor Chahal",
+      src: "songs/ranjha.mp3",
+      cover: "images/ranjha.jpeg",
+    },
+    {
+      title: "Dhak Dhak",
+      artist: "Aanchal Tyagi",
+      src: "songs/dhak-dhak.mp3",
+      cover: "images/dhak.jpeg",
+    },
+  ];
+
+  const audio = document.getElementById("audio");
+  const title = document.getElementById("title");
+  const artist = document.getElementById("artist");
+  const cover = document.getElementById("cover");
+  const progress = document.getElementById("progress");
+  const progressBar = document.getElementById("progressBar");
+  const current = document.getElementById("current");
+  const duration = document.getElementById("duration");
+  const playBtn = document.getElementById("play");
+
+  let index = 0;
+  let isSeeking = false;
+
+  function loadSong(i) {
+    const song = songs[i];
+    title.textContent = song.title;
+    artist.textContent = song.artist;
+    cover.src = song.cover;
+    audio.src = song.src;
+
+    progressBar.style.width = "0%";
+    current.textContent = "0:00";
+    duration.textContent = "-0:00";
+  }
+
+  function safePlay() {
+    audio.pause();
+    audio.currentTime = 0;
+    const p = audio.play();
+    if (p) p.catch(() => {});
+  }
+
+  document.getElementById("play").onclick = () => {
+    audio.paused ? audio.play() : audio.pause();
+  };
+
+  document.getElementById("next").onclick = () => {
+    index = (index + 1) % songs.length;
+    loadSong(index);
+    safePlay();
+  };
+
+  document.getElementById("prev").onclick = () => {
+    index = (index - 1 + songs.length) % songs.length;
+    loadSong(index);
+    safePlay();
+  };
+
+  audio.addEventListener("play", () => {
+    playBtn.innerHTML = '<i class="ri-pause-large-fill"></i>';
+  });
+
+  audio.addEventListener("pause", () => {
+    playBtn.innerHTML = '<i class="ri-play-large-fill"></i>';
+  });
+
+  audio.addEventListener("loadedmetadata", () => {
+    duration.textContent = "-" + format(audio.duration);
+  });
+
+  audio.addEventListener("timeupdate", () => {
+    if (!audio.duration || isSeeking) return;
+
+    const percent = (audio.currentTime / audio.duration) * 100;
+    progressBar.style.width = percent + "%";
+
+    current.textContent = format(audio.currentTime);
+
+    const remaining = Math.max(audio.duration - audio.currentTime, 0);
+    duration.textContent = "-" + format(remaining);
+  });
+
+  audio.addEventListener("ended", () => {
+    index = (index + 1) % songs.length;
+    loadSong(index);
+    safePlay();
+  });
+
+  audio.addEventListener("error", () => {
+    alert("Audio load error. Check file path.");
+  });
+
+  progress.addEventListener("mousedown", () => isSeeking = true);
+  document.addEventListener("mouseup", () => isSeeking = false);
+
+  progress.addEventListener("mousemove", (e) => {
+    if (!isSeeking || !audio.duration) return;
+    const width = progress.clientWidth;
+    audio.currentTime = (e.offsetX / width) * audio.duration;
+  });
+
+  progress.addEventListener("click", (e) => {
+    if (!audio.duration) return;
+    const width = progress.clientWidth;
+    audio.currentTime = (e.offsetX / width) * audio.duration;
+  });
+
+  function format(t) {
+    return (
+      Math.floor(t / 60) +
+      ":" +
+      String(Math.floor(t % 60)).padStart(2, "0")
+    );
+  }
+
+  loadSong(index);
+</script>
+</body>
+</html>
